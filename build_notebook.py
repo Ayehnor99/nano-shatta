@@ -52,16 +52,16 @@ in a **background thread** and finishes immediately — run it and move on.
 matters if you step away mid-run.)"""),
 
     code(r"""import threading, time
-    import IPython.display as ipd
+import IPython.display as ipd
 
-    def _keep_alive():
-        while True:
-            ipd.clear_output(wait=True)
-            print("keep-alive", time.strftime("%H:%M:%S"))
-            time.sleep(60)
+def _keep_alive():
+    while True:
+        ipd.clear_output(wait=True)
+        print("keep-alive", time.strftime("%H:%M:%S"))
+        time.sleep(60)
 
-    threading.Thread(target=_keep_alive, daemon=True).start()
-    print("keep-alive running in background — this cell finishes immediately")"""),
+threading.Thread(target=_keep_alive, daemon=True).start()
+print("keep-alive running in background — this cell finishes immediately")"""),
 
     md(r"""## 3 · Check the GPU
 
@@ -174,7 +174,45 @@ with open(out, encoding="utf-8") as fh:
 raw = json.dumps(loaded)
 assert "<YOUR_GH_USER>" not in raw, "placeholder still in notebook!"
 assert "Ayehnor99" in raw, "username not in notebook!"
+
+# Validate every code cell that is REAL Python actually compiles. This
+# catches the indentation bug where raw-string cell bodies inherit the
+# surrounding Python indentation of this file (e.g. 'import x\n    import y').
+# Colab shell/magic lines (!cmd, %cmd) and their backslash continuations are
+# blanked before compiling — they're passed to the shell, not Python.
+def strip_magics(src: str) -> str:
+    out, in_cont = [], False
+    for ln in src.split("\n"):
+        if in_cont:
+            out.append("")
+            in_cont = ln.rstrip().endswith("\\")
+            continue
+        if ln.lstrip().startswith(("!", "%")):
+            out.append("")
+            in_cont = ln.rstrip().endswith("\\")
+            continue
+        out.append(ln)
+    return "\n".join(out)
+
+
+cell_errors = []
+checked = 0
+for i, cell in enumerate(loaded["cells"]):
+    if cell["cell_type"] != "code":
+        continue
+    src = "".join(cell["source"])
+    checked += 1
+    try:
+        compile(strip_magics(src), f"<cell {i}>", "exec")
+    except SyntaxError as exc:
+        cell_errors.append((i, exc.msg, exc.lineno))
+if cell_errors:
+    for i, msg, ln in cell_errors:
+        print(f"  SYNTAX ERROR in cell {i} (line {ln}): {msg}")
+    raise SystemExit(f"notebook has {len(cell_errors)} uncompilable code cell(s)")
+
 print(f"wrote {out}: {len(loaded['cells'])} cells, "
       f"{sum(1 for c in loaded['cells'] if c['cell_type']=='code')} code, "
       f"{sum(1 for c in loaded['cells'] if c['cell_type']=='markdown')} markdown")
+print(f"python code cells compile: OK ({checked} checked)")
 print("badge URL points at: Ayehnor99/nano-shatta")
