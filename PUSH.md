@@ -1,77 +1,78 @@
-# Push nano-shatta to GitHub — final step
+# FINAL PUSH — rewritten history (token scrubbed)
 
-Everything is merged and ready. The push needs your token again because this
-shell session doesn't remember it. Run this yourself in a terminal.
+The local history has been rewritten to remove the leaked Genius token
+from `.env.example` (it was in 8 commits). The remote still has the old
+history with the token. **This push must be a force-push.**
 
----
-
-## Step 1 — Run the push
+Run this yourself in a terminal — it needs your token:
 
 ```bash
 cd ~/nano-shatta
-git push -u origin main
+git push --force-with-lease origin main
 ```
 
 When git asks:
 
 ```
 Username for 'https://github.com': Ayehnor99
-Password for 'https://Ayehnor99@github.com': <paste your classic PAT here>
+Password for 'https://Ayehnor99@github.com': <paste your classic PAT>
 ```
 
-- **Username:** `Ayehnor99`
-- **Password:** paste your **classic** Personal Access Token (the one with `repo` ticked)
-- It won't show on screen — that's normal
-- **Never paste the token into chat** — only into the git prompt
-
----
-
-## Step 2 — What success looks like
+Expected output:
 
 ```
-Enumerating objects: 70, done.
-Writing objects: 100% (70/70), 2.06 MiB | ...
+Writing objects: 100% ..., done.
 To https://github.com/Ayehnor99/nano-shatta.git
-   765ee24..ec13a3f  main -> main
-Branch 'main' set up to track remote branch 'main' from 'origin'.
+ + 765ee24...3026628 main -> main (forced update)
+```
+
+The `forced update` line is what we want — it means the remote's
+token-containing history was replaced with the clean one.
+
+---
+
+## Verify the fix landed on GitHub
+
+```bash
+# From any fresh clone, the token must be GONE:
+git clone https://github.com/Ayehnor99/nano-shatta.git /tmp/verify-ns
+cd /tmp/verify-ns
+python3 scan_history.py
+# Expected: "CLEAN: no commit has a real token value"
+```
+
+Or check on GitHub directly:
+https://github.com/Ayehnor99/nano-shatta/blob/main/.env.example
+
+The line should read `GENIUS_ACCESS_TOKEN=` (empty). If you see a value,
+the force-push didn't land — check the output above.
+
+---
+
+## If `--force-with-lease` is rejected
+
+Someone (or something) pushed to the remote since our last fetch.
+Fetch first, then force-push:
+
+```bash
+git fetch origin
+git push --force-with-lease origin main
+```
+
+If it still complains, use `--force` (we own this repo, nobody else
+is pushing to it):
+
+```bash
+git push --force origin main
 ```
 
 ---
 
-## Step 3 — Verify on GitHub
+## After the push — you're done
 
-Open https://github.com/Ayehnor99/nano-shatta
+1. https://github.com/Ayehnor99/nano-shatta → 29 files, Colab badge, clean LICENSE
+2. Click the badge → Colab → Runtime → T4 GPU → Run all
+3. ~15–25 min → download `shatta-lora.zip`
+4. Train your Shatta Wale bar-writer
 
-You should see:
-- **25 files** at the root
-- `README.md` with the **Open in Colab** badge at the top
-- `shatta_clean_v3.txt` (2MB)
-- `nano_shatta_train.ipynb`
-- `LICENSE` (MIT, copyright `BTC_Lord$`)
-- **7 commits** (6 ours + 1 merged from GitHub)
-
----
-
-## Step 4 — Test the Colab badge
-
-Click the badge in the README. It should open Colab with the notebook loaded.
-If it 404s, check the badge URL says `Ayehnor99` and `main`.
-
----
-
-## Step 5 — Train on Colab
-
-1. Badge → Colab opens
-2. **Runtime → Change runtime type → T4 GPU**
-3. **Run all cells** (the keep-alive cell runs forever — leave it in a tab)
-4. ~15–25 min → download `shatta-lora.zip`
-
----
-
-## If it still 403s
-
-Your token is fine-grained without this repo, or a classic token without
-`repo`. Make a fresh **classic** token:
-https://github.com/settings/tokens → Generate new token (classic) → tick `repo` → copy → push again.
-
-After it works, **revoke the old token** so it doesn't sit there as a loose end.
+See `INCIDENT.md` for the full story of what leaked and how it was fixed.
