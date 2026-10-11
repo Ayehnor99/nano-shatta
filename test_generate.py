@@ -47,7 +47,24 @@ raw3 = "a\n\n\n\nb"
 check("collapses 3+ blank lines", "\n\n\n" not in G.trim_section(raw3, "Intro"))
 check("empty stays empty", G.trim_section("", "Intro") == "")
 raw4 = "line one\n[Bridge]\nignored"
-check("stops at any marker", "ignored" not in G.trim_section(raw4, "Verse 2"))
+check("stops at any bracket marker", "ignored" not in G.trim_section(raw4, "Verse 2"))
+
+# THE REAL BUG: colon-style markers the model invents (seen in the Colab run,
+# 'Verse 1:' leaked into [Intro] before the real [Verse 1]).
+raw5 = "Ayy\nAyy, ah, ayy\nVerse 1:\nGyal yah too bad"
+check("cuts at colon-style marker", G.trim_section(raw5, "Intro") == "Ayy\nAyy, ah, ayy")
+check("marker_name bracket", G.marker_name("[Chorus]") == "Chorus")
+check("marker_name colon", G.marker_name("Verse 1:") == "Verse 1")
+check("marker_name on lyric line is None", G.marker_name("Mi a di realest") is None)
+check("marker_name on 'say:' style lyric is None", G.marker_name("She said, \"Baby, right now\"") is None)
+
+print("=== seed line (theme steering) ===")
+seed = "Street crown pon mi head, dem cyan tek it"
+p_seed = G.build_prompt("Street Crown", [], "Intro", seed_line=seed)
+check("seed line in first section prompt", seed in p_seed)
+check("seed under the first marker", p_seed.index("[Intro]") < p_seed.index(seed))
+p_later = G.build_prompt(None, [("Intro", "Ayy")], "Verse 1", seed_line=seed)
+check("seed NOT re-injected into later sections", seed not in p_later)
 
 print("=== compose_song (mock model) ===")
 class MockTok:
@@ -75,7 +92,9 @@ class Args:
     section_tokens = 50
     temperature = 0.9
     top_p = 0.95
-    repetition_penalty = 1.15
+    repetition_penalty = 1.25
+    no_repeat_ngram = 4
+    seed_line = None
 
 song = G.compose_song(MockModel(), MockTok(), Args())
 print(song)
@@ -85,6 +104,14 @@ check("sections in order",
       song.index("[Intro]") < song.index("[Verse 1]") < song.index("[Chorus]"))
 check("bleed trimmed at next marker (no 'bleed')", "bleed" not in song)
 check("generated content present", "realest" in song)
+
+print("=== compose_song with --seed-line ===")
+class ArgsSeeded(Args):
+    seed_line = "Street crown pon mi head"
+song2 = G.compose_song(MockModel(), MockTok(), ArgsSeeded())
+check("seed line opens the first section", song2.split("[Intro]")[1].strip().startswith("Street crown pon mi head"))
+check("seed line appears exactly once", song2.count("Street crown pon mi head") == 1)
+check("later sections present", "[Chorus]" in song2)
 
 print(f"\n=== {passed} passed, {failed} failed ===")
 sys.exit(1 if failed else 0)

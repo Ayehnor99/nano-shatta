@@ -114,23 +114,26 @@ print(tok.decode(out[0], skip_special_tokens=True))
 
 ## Cell 6 — Generate a WHOLE song (structure-aware)
 
-The corpus has `[Intro] [Verse 1] [Chorus] [Bridge] [Outro]` markers, so the
-model learned song structure. This writes each section in turn, carrying the
-song so far into every prompt so it stays on theme:
+The model writes each section in turn, carrying the song so far into every
+prompt so it stays on theme:
 
 ```python
 !python generate.py --adapter shatta-lora --song \
     --title "Street Crown" \
+    --seed-line "Street crown pon mi head, dem cyan tek it from mi" \
     --structure "Intro,Verse 1,Chorus,Verse 2,Chorus,Bridge,Outro" \
-    --section-tokens 90 --temperature 0.9 --repetition-penalty 1.15 \
+    --section-tokens 90 --temperature 0.9 \
+    --repetition-penalty 1.25 --no-repeat-ngram 4 \
     --out song.txt
 print(open("song.txt").read())
 ```
 
-- `--repetition-penalty` stops it looping the same line
-- `--section-tokens` controls how long each section runs
-- `--seed 3` reproduces a run exactly
-- Omit `--structure` for the default skeleton
+- **`--seed-line` steers the theme** — a title alone won't (the model reads
+  it as a header, not a topic). The seed opens section 1 and propagates.
+- **`--no-repeat-ngram 4`** blocks any repeated 4-word phrase (kills loops)
+- **`--repetition-penalty 1.25`** backs it up
+- `--section-tokens` controls section length; `--seed 3` reproduces a run
+- Colon-style markers the model invents (`Verse 1:`) are trimmed automatically
 
 ---
 

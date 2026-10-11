@@ -140,15 +140,21 @@ Edit the `--prompt` to try your own opening line."""),
 
 Structure-aware generation: the model writes each section in turn
 (Intro → Verse → Chorus → Verse → Chorus → Bridge → Outro), carrying the
-song so far into every prompt so it stays on theme. `--repetition-penalty`
-stops it looping the same line.
+song so far into every prompt so it stays on theme.
 
-Edit `--title` and `--structure` to taste. Add `--seed 3` to reproduce a run."""),
+**Steering the theme:** a title alone won't steer it (the model reads it as
+a header line, not a topic). Use `--seed-line` to give the opening bar — the
+model continues from it and the theme propagates through the whole song.
+
+`--no-repeat-ngram 4` blocks any repeated 4-word phrase (kills the loops),
+and `--repetition-penalty 1.25` backs it up."""),
 
     code(r"""!python generate.py --adapter shatta-lora --song \
     --title "Street Crown" \
+    --seed-line "Street crown pon mi head, dem cyan tek it from mi" \
     --structure "Intro,Verse 1,Chorus,Verse 2,Chorus,Bridge,Outro" \
-    --section-tokens 90 --temperature 0.9 --repetition-penalty 1.15 \
+    --section-tokens 90 --temperature 0.9 \
+    --repetition-penalty 1.25 --no-repeat-ngram 4 \
     --out song.txt
 print(open("song.txt").read())"""),
 
