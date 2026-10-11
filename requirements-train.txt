@@ -3,3 +3,4 @@ transformers>=4.44
 peft>=0.12
 accelerate>=0.34
 # Colab only (CUDA): bitsandbytes>=0.43  -- torch + bitsandbytes ship with Colab
+datasets>=3.0

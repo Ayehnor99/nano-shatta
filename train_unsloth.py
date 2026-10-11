@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 
 import torch
+from datasets import Dataset as HFDataset  # SFTTrainer requires HF Dataset
 from transformers import set_seed
 
 # Reuse everything from the HF trainer: data pipeline, packing,
@@ -35,13 +36,24 @@ from transformers import set_seed
 # subclasses Trainer, so callbacks carry over unchanged.
 from train import (
     LiveMonitor,
-    PackedDataset,
     build_blocks,
     collate,
     load_documents,
     make_monitor_callback,
     _BLOCK_SIZE,
 )
+
+
+def to_hf_dataset(blocks: list[list[int]]) -> HFDataset:
+    """Wrap packed blocks as an HF Dataset (SFTTrainer requirement).
+
+    Each row: {"input_ids": [...], "labels": [...]}. The custom collate
+    still runs at batch time; this only satisfies the type check.
+    """
+    return HFDataset.from_dict({
+        "input_ids": blocks,
+        "labels": [list(b) for b in blocks],
+    })
 
 # Tiny random model for --smoke. Unsloth needs a supported arch; the tiny
 # Llama checkpoint is the smallest that works. On CPU Unsloth kernels are
@@ -70,10 +82,11 @@ def load_model_unsloth(model_name: str, max_seq_length: int, load_in_4bit: bool)
 def apply_lora_unsloth(model, r: int, alpha: int, dropout: float):
     """Attach LoRA via Unsloth's get_peft_model.
 
-    target_modules = all-linear equivalents for Qwen2; Unsloth also
-    supports the string "all-linear" directly in recent versions, but the
-    explicit list is version-proof. embed_tokens/lm_head are included for
-    continued-pretraining-style text completion (our use case).
+    Standard LoRA targeting the attention + MLP projections (q/k/v/o +
+    gate/up/down). We deliberately do NOT target embed_tokens/lm_head:
+    Unsloth promotes those to full-matrix training (modules_to_save),
+    which costs VRAM and offloads embeddings to disk. For style
+    fine-tuning (not continued pretraining) that's pure overhead.
     """
     model = FastLanguageModel_get_peft(
         model,
@@ -81,7 +94,6 @@ def apply_lora_unsloth(model, r: int, alpha: int, dropout: float):
         target_modules=[
             "q_proj", "k_proj", "v_proj", "o_proj",
             "gate_proj", "up_proj", "down_proj",
-            "embed_tokens", "lm_head",
         ],
         lora_alpha=alpha,
         lora_dropout=0 if dropout == 0 else dropout,
@@ -184,8 +196,8 @@ def main() -> None:
     val_idx = set(idxs[:n_val])
     train_blocks = [b for i, b in enumerate(blocks) if i not in val_idx]
     val_blocks = [b for i, b in enumerate(blocks) if i in val_idx]
-    train_ds = PackedDataset(train_blocks)
-    val_ds = PackedDataset(val_blocks) if val_blocks else None
+    train_ds = to_hf_dataset(train_blocks)
+    val_ds = to_hf_dataset(val_blocks) if val_blocks else None
     print(f"[data] train={len(train_blocks)} | val={len(val_blocks)} blocks")
     _BLOCK_SIZE[0] = args.block_size
 
