@@ -6,7 +6,7 @@ Train a small **Shatta Wale-style dancehall lyrics model** with LoRA on a free C
 
 **One click to train:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<YOUR_GH_USER>/nano-shatta/blob/main/nano_shatta_train.ipynb)
 
-> Edit `<YOUR_GH_USER>` in the badge URLs above to your GitHub username after you push.
+> Replace `<YOUR_GH_USER>` in the badge URLs above with your GitHub username.
 
 ## What it does
 
@@ -36,6 +36,10 @@ Genius API → scrape (per-song, resumable) → clean (homoglyphs, dedup, drop i
 Cleaned: 0 Genius junk, 0 Cyrillic homoglyphs, 0 CRLF. Twi orthography
 (ɛ ɔ ŋ Ọ ọ) preserved.
 
+> **Rebuild the corpus yourself:** `python scrape_fleet.py && python merge_fleet.py`
+> (needs a free Genius token in `.env`). Intermediate corpora (v1/v2, raw scrape)
+> are intentionally not committed — they're reproducible from the pipeline.
+
 ## Files
 
 | File | Purpose |
@@ -46,6 +50,7 @@ Cleaned: 0 Genius junk, 0 Cyrillic homoglyphs, 0 CRLF. Twi orthography
 | `lyrics_scraper.py` | Genius scraper (lyricsgenius 3.15.0, 27/27 tests) |
 | `scraper_ckpt.py` | Crash-safe scraper (checkpoint per song, resumable) |
 | `scrape_fleet.py` | Scrape the 6 neighbor artists |
+| `run_scrape.py` | Scrape Shatta Wale |
 | `clean.py` | Polish a raw corpus (drop interviews, fix homoglyphs, dedup) |
 | `merge.py` / `merge_fleet.py` | Merge scraped songs → v2 / v3 corpus |
 | `build_notebook.py` | Regenerate the .ipynb from cell definitions |
@@ -53,7 +58,9 @@ Cleaned: 0 Genius junk, 0 Cyrillic homoglyphs, 0 CRLF. Twi orthography
 | `test_train.py` | 22 tests: data pipeline + full CPU smoke training run |
 | `test_generate.py` | End-to-end generate test (tiny model + smoke adapter) |
 | `probe_token.py` | Pass/fail Genius token check (never prints the value) |
+| `check_token_format.py` | Format-only token check (never prints the value) |
 | `COLAB.md` | Markdown version of the notebook cells |
+| `LICENSE` | MIT |
 
 ## Local setup
 
@@ -76,13 +83,17 @@ python train.py --smoke     # tiny CPU smoke training run
 
 ## Train on Colab (free)
 
-See `COLAB.md` or just click the badge at the top. ~15–25 min on a T4.
+Click the badge at the top, or see `COLAB.md`. ~15–25 min on a T4.
 
 ## Generate bars (after training)
 
 ```bash
 python generate.py --adapter shatta-lora --prompt "[Verse 1] Mi a di realest"
 ```
+
+## License
+
+MIT — see `LICENSE`. Do what you want, just keep the copyright notice.
 
 ## Secrets
 
