@@ -1,12 +1,10 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<YOUR_GH_USER>/nano-shatta/blob/main/nano_shatta_train.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Ayehnor99/nano-shatta/blob/main/nano_shatta_train.ipynb)
 
 # nano-shatta
 
 Train a small **Shatta Wale-style dancehall lyrics model** with LoRA on a free Colab T4 GPU.
 
-**One click to train:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/<YOUR_GH_USER>/nano-shatta/blob/main/nano_shatta_train.ipynb)
-
-> Replace `<YOUR_GH_USER>` in the badge URLs above with your GitHub username.
+**One click to train:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Ayehnor99/nano-shatta/blob/main/nano_shatta_train.ipynb)
 
 ## What it does
 

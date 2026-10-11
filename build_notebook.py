@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Build nano_shatta_train.ipynb from cell definitions (avoids hand-writing JSON)."""
 import json
-import sys
 
-OWNER = sys.argv[1] if len(sys.argv) > 1 else "<YOUR_GH_USER>"
+OWNER = "Ayehnor99"
 REPO = "nano-shatta"
 REPO_URL = f"https://github.com/{OWNER}/{REPO}.git"
 
@@ -35,7 +34,7 @@ Run the cells **top to bottom**. Each section says what it does and what to expe
     md(r"""## 1 · Setup
 
 Clones this repo into the Colab VM and installs dependencies.
-**Edit `REPO_URL` below only if you forked this repo** — otherwise leave it."""),
+(If you forked this repo, edit `REPO_URL` below to point at your fork.)"""),
 
     code(r"""REPO_URL = """ + repr(REPO_URL) + r"""  # edit only if you forked this repo
 !git clone {REPO_URL}
@@ -102,7 +101,7 @@ Edit the `--prompt` to try your own opening line."""),
     md(r"""## 6 · Download the adapter
 
 Zips `shatta-lora/` and downloads it. It contains `adapter_config.json`,
-`adapter_model.safetensors`, and the tokenizer — the whole trained model,
+`adapter_model.safetensors`, and the tokenizer files — the whole trained model,
 ~50MB. Load it on top of the base Qwen2.5-0.5B anywhere (see README)."""),
 
     code(r"""!zip -q -r shatta-lora.zip shatta-lora
@@ -137,9 +136,13 @@ with open(out, "w", encoding="utf-8") as fh:
     json.dump(nb, fh, indent=1)
     fh.write("\n")
 
-# validate round-trip
+# validate round-trip + no placeholder left
 with open(out, encoding="utf-8") as fh:
     loaded = json.load(fh)
+raw = json.dumps(loaded)
+assert "<YOUR_GH_USER>" not in raw, "placeholder still in notebook!"
+assert "Ayehnor99" in raw, "username not in notebook!"
 print(f"wrote {out}: {len(loaded['cells'])} cells, "
       f"{sum(1 for c in loaded['cells'] if c['cell_type']=='code')} code, "
       f"{sum(1 for c in loaded['cells'] if c['cell_type']=='markdown')} markdown")
+print("badge URL points at: Ayehnor99/nano-shatta")
