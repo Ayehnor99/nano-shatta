@@ -38,11 +38,17 @@ Clones this repo into the Colab VM and installs dependencies.
 (If you forked this repo, edit `REPO_URL` below to point at your fork.)"""),
 
     code(r"""REPO_URL = """ + repr(REPO_URL) + r"""  # edit only if you forked this repo
-!git clone {REPO_URL}
-%cd nano-shatta
+import os, subprocess
+# Idempotent: always land at /content/nano-shatta, however many times you
+# re-run this cell (no more nano-shatta/nano-shatta/nano-shatta nesting).
+os.chdir("/content")
+if not os.path.isdir("/content/nano-shatta/.git"):
+    subprocess.run(["git", "clone", REPO_URL, "/content/nano-shatta"], check=True)
+os.chdir("/content/nano-shatta")
+subprocess.run(["git", "pull", "-q"])
 !pip install -q unsloth
 !pip install -q -r requirements.txt
-print("setup done")"""),
+print("setup done — repo at", os.getcwd())"""),
 
     md(r"""## 2 · Keep-alive (prevents idle disconnect)
 
@@ -130,17 +136,35 @@ Edit the `--prompt` to try your own opening line."""),
     --prompt "[Verse 1] Mi a di realest" \
     --max-new-tokens 100 --seed 7"""),
 
-    md(r"""## 6 · Download the adapter
+    md(r"""## 6 · Generate a WHOLE song
+
+Structure-aware generation: the model writes each section in turn
+(Intro → Verse → Chorus → Verse → Chorus → Bridge → Outro), carrying the
+song so far into every prompt so it stays on theme. `--repetition-penalty`
+stops it looping the same line.
+
+Edit `--title` and `--structure` to taste. Add `--seed 3` to reproduce a run."""),
+
+    code(r"""!python generate.py --adapter shatta-lora --song \
+    --title "Street Crown" \
+    --structure "Intro,Verse 1,Chorus,Verse 2,Chorus,Bridge,Outro" \
+    --section-tokens 90 --temperature 0.9 --repetition-penalty 1.15 \
+    --out song.txt
+print(open("song.txt").read())"""),
+
+    md(r"""## 7 · Download the adapter
 
 Zips `shatta-lora/` and downloads it. It contains `adapter_config.json`,
 `adapter_model.safetensors`, and the tokenizer files — the whole trained model,
-~50MB. Load it on top of the base Qwen2.5-0.5B anywhere (see README)."""),
+~50MB. Load it on top of the base Qwen2.5-1.5B-Instruct anywhere (see README).
+The adapter config records the exact base, so generation always uses the
+right one."""),
 
     code(r"""!zip -q -r shatta-lora.zip shatta-lora
 from google.colab import files
 files.download("shatta-lora.zip")"""),
 
-    md(r"""## 7 · (Optional) Back up to Google Drive
+    md(r"""## 8 · (Optional) Back up to Google Drive
 
 If the session dies mid-training, Colab's VM is wiped. Mount Drive and copy
 the output so a `--resume` can pick up where you left off."""),
@@ -181,6 +205,8 @@ assert "Ayehnor99" in raw, "username not in notebook!"
 # Colab shell/magic lines (!cmd, %cmd) and their backslash continuations are
 # blanked before compiling — they're passed to the shell, not Python.
 def strip_magics(src: str) -> str:
+    """Replace Colab magic lines with `pass` (indent-preserving) so the
+    rest of the cell still parses; blank out backslash continuations."""
     out, in_cont = [], False
     for ln in src.split("\n"):
         if in_cont:
@@ -188,7 +214,8 @@ def strip_magics(src: str) -> str:
             in_cont = ln.rstrip().endswith("\\")
             continue
         if ln.lstrip().startswith(("!", "%")):
-            out.append("")
+            indent = ln[: len(ln) - len(ln.lstrip())]
+            out.append(indent + "pass")
             in_cont = ln.rstrip().endswith("\\")
             continue
         out.append(ln)

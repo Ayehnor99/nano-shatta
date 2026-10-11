@@ -112,7 +112,29 @@ print(tok.decode(out[0], skip_special_tokens=True))
 
 ---
 
-## Cell 6 — Download the adapter (zip)
+## Cell 6 — Generate a WHOLE song (structure-aware)
+
+The corpus has `[Intro] [Verse 1] [Chorus] [Bridge] [Outro]` markers, so the
+model learned song structure. This writes each section in turn, carrying the
+song so far into every prompt so it stays on theme:
+
+```python
+!python generate.py --adapter shatta-lora --song \
+    --title "Street Crown" \
+    --structure "Intro,Verse 1,Chorus,Verse 2,Chorus,Bridge,Outro" \
+    --section-tokens 90 --temperature 0.9 --repetition-penalty 1.15 \
+    --out song.txt
+print(open("song.txt").read())
+```
+
+- `--repetition-penalty` stops it looping the same line
+- `--section-tokens` controls how long each section runs
+- `--seed 3` reproduces a run exactly
+- Omit `--structure` for the default skeleton
+
+---
+
+## Cell 7 — Download the adapter
 
 ```python
 !zip -q -r shatta-lora.zip shatta-lora

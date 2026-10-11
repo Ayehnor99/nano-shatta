@@ -44,7 +44,7 @@ Cleaned: 0 Genius junk, 0 Cyrillic homoglyphs, 0 CRLF. Twi orthography
 |---|---|
 | `nano_shatta_train.ipynb` | Colab notebook — the whole training pipeline in 7 cells |
 | `train.py` | LoRA fine-tune (4-bit GPU / CPU smoke mode) |
-| `generate.py` | Load adapter + base, write bars |
+| `generate.py` | Load adapter + base, write bars OR a full structured song |
 | `lyrics_scraper.py` | Genius scraper (lyricsgenius 3.15.0, 27/27 tests) |
 | `scraper_ckpt.py` | Crash-safe scraper (checkpoint per song, resumable) |
 | `scrape_fleet.py` | Scrape the 6 neighbor artists |
@@ -88,8 +88,15 @@ Click the badge at the top, or see `COLAB.md`. ~15–25 min on a T4.
 ## Generate bars (after training)
 
 ```bash
+# a single verse
 python generate.py --adapter shatta-lora --prompt "[Verse 1] Mi a di realest"
+
+# a WHOLE structured song (intro/verse/chorus/bridge/outro)
+python generate.py --adapter shatta-lora --song --title "Street Crown" --out song.txt
 ```
+
+The base model is read **from the adapter config**, so you can never
+generate with a different base than you trained on.
 
 ## License
 
