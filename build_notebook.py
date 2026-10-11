@@ -20,11 +20,12 @@ def code(src):
 cells = [
     md(r"""# nano-shatta — train a Shatta Wale-style lyrics model
 
-This notebook fine-tunes **Qwen2.5-0.5B** with **LoRA** on 938 dancehall songs
+This notebook fine-tunes **Qwen2.5-1.5B-Instruct** with **LoRA via Unsloth**
+(2x faster, ~70% less VRAM) on 938 dancehall songs
 (2MB corpus, already in this repo as `shatta_clean_v3.txt`).
 
 - **Cost:** free (Colab T4 GPU)
-- **Time:** ~15–25 min for 3 epochs
+- **Time:** ~10–20 min for 3 epochs (Unsloth speedup)
 - **Output:** `shatta-lora.zip` (~50MB adapter) you download at the end
 
 **What you get:** a model that writes Shatta-Wale-style bars.
@@ -39,7 +40,8 @@ Clones this repo into the Colab VM and installs dependencies.
     code(r"""REPO_URL = """ + repr(REPO_URL) + r"""  # edit only if you forked this repo
 !git clone {REPO_URL}
 %cd nano-shatta
-!pip install -q -r requirements-train.txt bitsandbytes
+!pip install -q unsloth
+!pip install -q -r requirements.txt
 print("setup done")"""),
 
     md(r"""## 2 · Keep-alive (prevents idle disconnect)
@@ -75,7 +77,11 @@ if torch.cuda.is_available():
 else:
     print("NO GPU — go to Runtime -> Change runtime type -> T4 GPU")"""),
 
-    md(r"""## 4 · Train (LoRA, 4-bit) — with LIVE monitoring
+    md(r"""## 4 · Train (Unsloth LoRA, 4-bit) — with LIVE monitoring
+
+We fine-tune **Qwen2.5-1.5B-Instruct** (pre-quantized 4-bit by Unsloth for
+fast download) using Unsloth's optimized kernels — ~2x faster and ~70% less
+VRAM than the vanilla HF path.
 
 You'll see a one-line status every 5 steps with loss, lr, tok/s, elapsed,
 ETA, and a live **sparkline** of the loss curve:
@@ -84,7 +90,7 @@ ETA, and a live **sparkline** of the loss curve:
 step   100/170 | loss 2.8431 | lr 1.90e-04 | 8,192 tok/s | elapsed 03:12 | ETA 02:41 | ▁▂▂▃▄▄▅▅▆▇
 ```
 
-Every `--sample-every` steps (default 200) it also prints a **val loss**
+Every `--sample-every` steps (set to 50 below) it also prints a **val loss**
 and generates a **sample bar** from the mid-training model — you can
 literally watch it learn to write Shatta-style lyrics. Samples are also
 appended to `shatta-lora/samples.log`.
@@ -96,8 +102,8 @@ appended to `shatta-lora/samples.log`.
 
 If the session dies mid-training, re-run this cell with `--resume` appended."""),
 
-    code(r"""!python train.py \
-    --model Qwen/Qwen2.5-0.5B \
+    code(r"""!python train_unsloth.py \
+    --model unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit \
     --data shatta_clean_v3.txt \
     --out shatta-lora \
     --epochs 3 \
@@ -115,7 +121,9 @@ If the session dies mid-training, re-run this cell with `--resume` appended.""")
 
     md(r"""## 5 · Generate a test bar
 
-Loads the freshly trained adapter and writes a verse.
+Loads the freshly trained adapter and writes a verse. The base model is
+read **from the adapter config** — no manual base-model flag, so the
+train/generate base mismatch bug can't happen.
 Edit the `--prompt` to try your own opening line."""),
 
     code(r"""!python generate.py --adapter shatta-lora \

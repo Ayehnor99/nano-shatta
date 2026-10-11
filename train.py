@@ -45,6 +45,10 @@ SMOKE_MODEL = "hf-internal-testing/tiny-random-LlamaForCausalLM"
 # (The Qwen tokenizer emits ids up to 151k, which overflow the tiny model.)
 SMOKE_TOKENIZER = "hf-internal-testing/tiny-random-LlamaForCausalLM"
 
+# Default base for real training. Instruct variant: better prompt-following
+# for lyric generation from a "[Verse 1]" prompt.
+DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
+
 
 # ---------------------------------------------------------------------------
 # Data
@@ -133,11 +137,15 @@ def load_base_model(model_name: str, use_4bit: bool, tokenizer=None):
             torch.bfloat16 if torch.cuda.is_available() else torch.float32
         )
     model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
-    # The tokenizer can emit ids up to len(tokenizer)-1 (special tokens),
-    # but the base model's embedding table is often sized to vocab_size
-    # (smaller). Resize so EOS/`` never overflows the embedding.
+    # Resize embeddings to the model's OWN vocab_size (from its config),
+    # never len(tokenizer). len(tokenizer) can be smaller than the model's
+    # embedding table (Qwen2.5: len(tok)=151665 < vocab_size=151936), which
+    # caused a size-mismatch bug when the adapter was later loaded onto a
+    # base with the config-sized table.
     if tokenizer is not None:
-        model.resize_token_embeddings(len(tokenizer))
+        target = model.config.vocab_size
+        if model.get_input_embeddings().num_embeddings != target:
+            model.resize_token_embeddings(target)
     model.config.use_cache = False  # required for gradient checkpointing
     return model
 
