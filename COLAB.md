@@ -26,15 +26,22 @@ Colab notebook cells — run top to bottom. Free tier T4, ~10–20 min for 3 epo
 ## Cell 2 — Keep the session alive (prevents idle disconnect)
 
 ```python
-import time, IPython.display as ipd
-while True:
-    ipd.clear_output(wait=True)
-    print("keep-alive", time.strftime("%H:%M:%S"))
-    time.sleep(60)
+import threading, time
+import IPython.display as ipd
+
+def _keep_alive():
+    while True:
+        ipd.clear_output(wait=True)
+        print("keep-alive", time.strftime("%H:%M:%S"))
+        time.sleep(60)
+
+threading.Thread(target=_keep_alive, daemon=True).start()
+print("keep-alive running in background — this cell finishes immediately")
 ```
 
-> Run this in a cell, then **leave it running** in a background tab.
-> Or use Colab Pro's background execution. Free tier kicks after ~90 min idle.
+> This cell **finishes immediately** — the keep-alive runs in a background thread.
+> Free tier kicks after ~90 min idle. (During active training the GPU keeps
+> the session alive, so keep-alive only matters if you step away mid-run.)
 
 ---
 

@@ -44,15 +44,22 @@ print("setup done")"""),
 
     md(r"""## 2 · Keep-alive (prevents idle disconnect)
 
-Colab kills free sessions after ~90 min idle. Run this cell and **leave it
-running in a background tab** — it pings every 60s so training never stops."""),
+Colab kills free sessions after ~90 min idle. This cell starts a keep-alive
+in a **background thread** and finishes immediately — run it and move on.
+(During active training the GPU keeps the session alive; keep-alive only
+matters if you step away mid-run.)"""),
 
-    code(r"""import time
-import IPython.display as ipd
-while True:
-    ipd.clear_output(wait=True)
-    print("keep-alive", time.strftime("%H:%M:%S"))
-    time.sleep(60)"""),
+    code(r"""import threading, time
+    import IPython.display as ipd
+
+    def _keep_alive():
+        while True:
+            ipd.clear_output(wait=True)
+            print("keep-alive", time.strftime("%H:%M:%S"))
+            time.sleep(60)
+
+    threading.Thread(target=_keep_alive, daemon=True).start()
+    print("keep-alive running in background — this cell finishes immediately")"""),
 
     md(r"""## 3 · Check the GPU
 
