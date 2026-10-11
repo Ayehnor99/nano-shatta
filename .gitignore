@@ -6,14 +6,20 @@ __pycache__/
 *.pyc
 .venv/
 
-# Scraped data (large, rebuildable)
+# Scraped data (large, rebuildable via scrape_fleet.py)
 data/
 
 # Training output (large, rebuilt by Colab)
 shatta-lora/
 *.zip
 
-# Audit/scratch scripts
-audit*.py
+# Intermediate corpora (rebuildable via clean.py / merge.py / merge_fleet.py)
+shatta_pretrain_refined.txt   # original raw scrape (has noise)
+shatta_clean.txt              # v1 clean
+shatta_clean_v2.txt           # v2 Shatta-only merge
+
+# One-off / debug scripts (not part of the pipeline)
+filter_primary.py
 check_slugs.py
+audit*.py
 smoke_clean.sh
