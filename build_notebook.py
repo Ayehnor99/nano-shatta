@@ -75,9 +75,22 @@ if torch.cuda.is_available():
 else:
     print("NO GPU — go to Runtime -> Change runtime type -> T4 GPU")"""),
 
-    md(r"""## 4 · Train (LoRA, 4-bit)
+    md(r"""## 4 · Train (LoRA, 4-bit) — with LIVE monitoring
+
+You'll see a one-line status every 5 steps with loss, lr, tok/s, elapsed,
+ETA, and a live **sparkline** of the loss curve:
+
+```
+step   100/170 | loss 2.8431 | lr 1.90e-04 | 8,192 tok/s | elapsed 03:12 | ETA 02:41 | ▁▂▂▃▄▄▅▅▆▇
+```
+
+Every `--sample-every` steps (default 200) it also prints a **val loss**
+and generates a **sample bar** from the mid-training model — you can
+literally watch it learn to write Shatta-style lyrics. Samples are also
+appended to `shatta-lora/samples.log`.
 
 - 3 epochs over ~900 blocks of 512 tokens (effective batch 16)
+- 5% of blocks held out for val loss
 - Loss should drop from ~4.0 toward ~2.0 or lower
 - Checkpoints save every 100 steps to `shatta-lora/checkpoints/`
 
@@ -94,7 +107,11 @@ If the session dies mid-training, re-run this cell with `--resume` appended.""")
     --lr 2e-4 \
     --lora-r 16 \
     --lora-alpha 32 \
-    --save-steps 100"""),
+    --save-steps 100 \
+    --val-frac 0.05 \
+    --sample-every 50 \
+    --sample-prompt "[Verse 1]" \
+    --sample-tokens 48"""),
 
     md(r"""## 5 · Generate a test bar
 

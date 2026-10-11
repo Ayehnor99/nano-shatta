@@ -54,6 +54,7 @@ Cleaned: 0 Genius junk, 0 Cyrillic homoglyphs, 0 CRLF. Twi orthography
 | `build_notebook.py` | Regenerate the .ipynb from cell definitions |
 | `test_scraper.py` | 27 offline scraper tests |
 | `test_train.py` | 22 tests: data pipeline + full CPU smoke training run |
+| `test_monitor.py` | 19 tests: sparkline, ETA, live monitor, train/val split |
 | `test_generate.py` | End-to-end generate test (tiny model + smoke adapter) |
 | `probe_token.py` | Pass/fail Genius token check (never prints the value) |
 | `check_token_format.py` | Format-only token check (never prints the value) |
@@ -75,6 +76,7 @@ python run_scrape.py        # Shatta Wale -> data/raw/lyrics/
 python scrape_fleet.py      # 6 neighbors -> data/raw/<artist>/
 python merge_fleet.py       # -> shatta_clean_v3.txt
 python test_train.py        # 22 tests, no GPU needed
+python test_monitor.py      # 19 tests: sparkline, ETA, live monitor, val split
 python test_generate.py     # end-to-end generate test
 python train.py --smoke     # tiny CPU smoke training run
 ```

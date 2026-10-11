@@ -58,31 +58,32 @@ print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N
 
 ---
 
-## Cell 4 — Train (LoRA, 4-bit, Qwen2.5-0.5B)
+## Cell 4 — Train (LoRA, 4-bit) with live monitoring
 
-```python
-!python train.py \
-    --model Qwen/Qwen2.5-0.5B \
-    --data shatta_clean_v3.txt \
-    --out shatta-lora \
-    --epochs 3 \
-    --batch-size 2 \
-    --grad-accum 8 \
-    --block-size 512 \
-    --lr 2e-4 \
-    --lora-r 16 \
-    --lora-alpha 32 \
-    --save-steps 100
+Watch it learn in real time. Every 5 steps you get a status line:
+
+```
+step   100/170 | loss 2.8431 | lr 1.90e-04 | 8,192 tok/s | elapsed 03:12 | ETA 02:41 | ▁▂▂▃▄▄▅▅▆▇
 ```
 
-Expected: ~226 blocks/epoch on v2, ~6,400 blocks/epoch on v3 (2MB corpus).
-Effective batch = 2 × 8 = 16. T4 should do ~3–5 sec/step → **3 epochs ≈ 15–25 min**.
+Every `--sample-every` steps (set to 50 below) it prints a **val loss**
+and generates a **sample bar** from the mid-training model. Samples are
+also saved to `shatta-lora/samples.log`.
 
-> Resume after a disconnect:
-> ```python
-> !python train.py --model Qwen/Qwen2.5-0.5B --data shatta_clean_v3.txt \
->     --out shatta-lora --epochs 3 --batch-size 2 --grad-accum 8 --resume
-> ```
+```python
+!python train.py --model Qwen/Qwen2.5-0.5B \
+    --data shatta_clean_v3.txt --out shatta-lora \
+    --epochs 3 --batch-size 2 --grad-accum 8 \
+    --block-size 512 --lr 2e-4 \
+    --lora-r 16 --lora-alpha 32 --save-steps 100 \
+    --val-frac 0.05 \
+    --sample-every 50 \
+    --sample-prompt "[Verse 1]" \
+    --sample-tokens 48
+```
+
+> Resume after a disconnect: add `--resume` to the command above.
+> Tune the cadence: `--sample-every 0` disables sampling, `--val-frac 0` disables val.
 
 ---
 
